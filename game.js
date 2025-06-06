@@ -12,10 +12,16 @@ class Game {
         this.viewportWidth = this.gridWidth;
         this.worldOffset = 0;
         
+        this.hitboxSize = this.cellSize * 0.8;
+        
         this.player = {
             x: Math.floor(this.viewportWidth / 3),
             y: Math.floor(this.gridHeight / 2),
-            size: this.cellSize - 4
+            size: this.cellSize - 4,
+            hitbox: {
+                width: this.hitboxSize,
+                height: this.hitboxSize
+            }
         };
         
         this.score = 0;
@@ -24,7 +30,7 @@ class Game {
         this.isGameOver = false;
         
         this.cars = [];
-        this.spawnCarInterval = 30;
+        this.spawnCarInterval = 15;
         this.frameCount = 0;
         
         this.roadLanes = [];
@@ -74,13 +80,13 @@ class Game {
             lane.x < this.worldOffset + this.viewportWidth
         );
 
-        if (visibleLanes.length > 0) {
+        if (visibleLanes.length > 0 && Math.random() < 0.8) {
             const lane = visibleLanes[Math.floor(Math.random() * visibleLanes.length)];
             this.cars.push({
                 x: lane.x,
                 y: lane.direction === 'down' ? -1 : this.gridHeight,
                 direction: lane.direction,
-                speed: lane.speed
+                speed: lane.speed * 1.2
             });
         }
     }
@@ -109,9 +115,22 @@ class Game {
 
     checkCollisions() {
         const playerWorldX = this.worldOffset + this.player.x;
+        
+        const playerLeft = playerWorldX * this.cellSize + (this.cellSize - this.hitboxSize) / 2;
+        const playerRight = playerLeft + this.hitboxSize;
+        const playerTop = this.player.y * this.cellSize + (this.cellSize - this.hitboxSize) / 2;
+        const playerBottom = playerTop + this.hitboxSize;
+
         for (const car of this.cars) {
-            const carGridY = Math.floor(car.y);
-            if (playerWorldX === car.x && this.player.y === carGridY) {
+            const carLeft = car.x * this.cellSize + (this.cellSize - this.hitboxSize) / 2;
+            const carRight = carLeft + this.hitboxSize;
+            const carTop = car.y * this.cellSize + (this.cellSize - this.hitboxSize) / 2;
+            const carBottom = carTop + this.hitboxSize;
+
+            if (playerLeft < carRight &&
+                playerRight > carLeft &&
+                playerTop < carBottom &&
+                playerBottom > carTop) {
                 return true;
             }
         }
@@ -196,21 +215,43 @@ class Game {
             }
         }
 
+        const playerScreenX = this.player.x * this.cellSize;
+        const playerScreenY = this.player.y * this.cellSize;
+
+        this.ctx.fillStyle = 'rgba(76, 175, 80, 0.3)';
+        this.ctx.fillRect(
+            playerScreenX + (this.cellSize - this.hitboxSize) / 2,
+            playerScreenY + (this.cellSize - this.hitboxSize) / 2,
+            this.hitboxSize,
+            this.hitboxSize
+        );
+
         this.ctx.fillStyle = '#4CAF50';
         this.ctx.fillRect(
-            this.player.x * this.cellSize + 2,
-            this.player.y * this.cellSize + 2,
+            playerScreenX + 2,
+            playerScreenY + 2,
             this.player.size,
             this.player.size
         );
 
-        this.ctx.fillStyle = '#f44336';
         for (const car of this.cars) {
             const screenX = car.x - this.worldOffset;
             if (screenX >= 0 && screenX < this.viewportWidth) {
+                const carScreenX = screenX * this.cellSize;
+                const carScreenY = car.y * this.cellSize;
+
+                this.ctx.fillStyle = 'rgba(244, 67, 54, 0.3)';
                 this.ctx.fillRect(
-                    screenX * this.cellSize + 2,
-                    car.y * this.cellSize + 2,
+                    carScreenX + (this.cellSize - this.hitboxSize) / 2,
+                    carScreenY + (this.cellSize - this.hitboxSize) / 2,
+                    this.hitboxSize,
+                    this.hitboxSize
+                );
+
+                this.ctx.fillStyle = '#f44336';
+                this.ctx.fillRect(
+                    carScreenX + 2,
+                    carScreenY + 2,
                     this.cellSize - 4,
                     this.cellSize - 4
                 );
