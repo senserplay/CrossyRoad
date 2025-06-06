@@ -28,6 +28,8 @@ class Game {
         this.maxScore = 0;
         this.episode = 1;
         this.isGameOver = false;
+        this.lastTimeUpdate = Date.now();
+        this.lastScoreDecrease = Date.now();
         
         this.cars = [];
         this.spawnCarInterval = 15;
@@ -150,7 +152,7 @@ class Game {
             case 'right':
                 this.worldOffset++;
                 this.generateNewRoads();
-                this.score++;
+                this.score += 10;
                 this.updateScoreDisplay();
                 break;
         }
@@ -160,7 +162,7 @@ class Game {
             return -100;
         }
 
-        return 1;
+        return action === 'right' ? 10 : 1;
     }
 
     gameOver() {
@@ -179,6 +181,8 @@ class Game {
         this.cars = [];
         this.isGameOver = false;
         this.episode++;
+        this.lastTimeUpdate = Date.now();
+        this.lastScoreDecrease = Date.now();
         this.generateInitialLevel();
         this.updateScoreDisplay();
     }
@@ -261,13 +265,22 @@ class Game {
 
     update() {
         if (!this.isGameOver) {
+            const currentTime = Date.now();
+            
+            // Проверяем, прошла ли секунда с последнего уменьшения очков
+            if (currentTime - this.lastScoreDecrease >= 1000) {
+                this.score = Math.max(0, this.score - 1);
+                this.lastScoreDecrease = currentTime;
+                this.updateScoreDisplay();
+            }
+            
             this.frameCount++;
             if (this.frameCount % this.spawnCarInterval === 0) {
                 this.spawnCar();
             }
             this.updateCars();
-            this.draw();
         }
+        this.draw();
     }
 
     getState() {
